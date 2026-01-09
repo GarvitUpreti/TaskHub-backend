@@ -1,4 +1,5 @@
 const Task = require('../models/task.model');
+const logAction = require('../middleware/auditLog.middleware'); // import the audit log helper
 
 /**
  * @desc   Create a new task
@@ -13,6 +14,14 @@ exports.createTask = async (req, res, next) => {
       title,
       description,
       owner: req.user.id,
+    });
+
+    // Audit log
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_TASK',
+      collectionName: 'tasks',
+      documentId: task._id,
     });
 
     res.status(201).json({
@@ -33,11 +42,9 @@ exports.getTasks = async (req, res, next) => {
   try {
     let tasks;
 
-    // Admin can see all tasks
     if (req.user.role === 'admin') {
       tasks = await Task.find();
     } else {
-      // User can see only their tasks
       tasks = await Task.find({ owner: req.user.id });
     }
 
@@ -67,11 +74,7 @@ exports.getTaskById = async (req, res, next) => {
       });
     }
 
-    // Ownership check (admin override)
-    if (
-      task.owner.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
+    if (task.owner.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this task',
@@ -103,11 +106,7 @@ exports.updateTask = async (req, res, next) => {
       });
     }
 
-    // Ownership check (admin override)
-    if (
-      task.owner.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
+    if (task.owner.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this task',
@@ -117,6 +116,14 @@ exports.updateTask = async (req, res, next) => {
     task = await Task.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
+    });
+
+    // Audit log
+    await logAction({
+      userId: req.user.id,
+      action: 'UPDATE_TASK',
+      collectionName: 'tasks',
+      documentId: task._id,
     });
 
     res.status(200).json({
@@ -144,11 +151,7 @@ exports.deleteTask = async (req, res, next) => {
       });
     }
 
-    // Ownership check (admin override)
-    if (
-      task.owner.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
+    if (task.owner.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this task',
@@ -156,6 +159,14 @@ exports.deleteTask = async (req, res, next) => {
     }
 
     await task.deleteOne();
+
+    // Audit log
+    await logAction({
+      userId: req.user.id,
+      action: 'DELETE_TASK',
+      collectionName: 'tasks',
+      documentId: task._id,
+    });
 
     res.status(200).json({
       success: true,
