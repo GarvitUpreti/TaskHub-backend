@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
 const {
@@ -7,47 +7,94 @@ const {
   getTaskById,
   updateTask,
   deleteTask,
-} = require('./task.controller');
+} = require("./task.controller");
 
-const { protect, authorize } = require('../auth/auth.middleware'); // Auth + role
-const checkTaskOwnership = require('./ownership.middleware'); // Ownership
-const validateRequest = require('../middlewares/validation.middleware'); // Validation error handler
+const { authenticate, authorize } = require("../auth/auth.middleware");
+const checkTaskOwnership = require("./ownership.middleware");
+const validateRequest = require("../middlewares/validation.middleware");
 const {
   createTaskValidation,
   updateTaskValidation,
   taskIdValidation,
-} = require('./task.validation'); // DTO rules
+} = require("./task.validation");
 
-// Apply auth to all task routes
-router.use(protect);
+// Apply authentication to all task routes
+router.use(authenticate);
 
 /**
- * @route   POST /tasks
- * @desc    Create a new task
- * @access  Private (User/Admin)
+ * @swagger
+ * /tasks:
+ *   post:
+ *     summary: Create a new task
+ *     description: |
+ *       🔐 Protected route  
+ *       Requires JWT authentication.
+ *       
+ *       - User: can create own tasks
+ *       - Admin: can create tasks
+ *     tags: [Tasks]
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *       401:
+ *         description: Unauthorized
  */
 router.post(
-  '/',
-  authorize('user', 'admin'),
+  "/",
+  authorize("user", "admin"),
   createTaskValidation,
   validateRequest,
   createTask
 );
 
 /**
- * @route   GET /tasks
- * @desc    Get all tasks
- * @access  Private
+ * @swagger
+ * /tasks:
+ *   get:
+ *     summary: Get all tasks
+ *     description: |
+ *       🔐 Protected route  
+ *       Requires JWT authentication.
+ *       
+ *       - Admin: can view all tasks
+ *       - User: can view only own tasks
+ *     tags: [Tasks]
+ *     responses:
+ *       200:
+ *         description: Tasks fetched successfully
+ *       401:
+ *         description: Unauthorized
  */
-router.get('/', authorize('user', 'admin'), getTasks);
+router.get("/", authorize("user", "admin"), getTasks);
 
 /**
- * @route   GET /tasks/:id
- * @desc    Get single task
- * @access  Private (Owner/Admin)
+ * @swagger
+ * /tasks/{id}:
+ *   get:
+ *     summary: Get a single task
+ *     description: |
+ *       🔐 Protected route  
+ *       Requires JWT authentication.
+ *       
+ *       - Owner: can view the task
+ *       - Admin: can view any task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task fetched successfully
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Task not found
  */
 router.get(
-  '/:id',
+  "/:id",
   taskIdValidation,
   validateRequest,
   checkTaskOwnership,
@@ -55,12 +102,31 @@ router.get(
 );
 
 /**
- * @route   PUT /tasks/:id
- * @desc    Update a task
- * @access  Private (Owner/Admin)
+ * @swagger
+ * /tasks/{id}:
+ *   put:
+ *     summary: Update a task
+ *     description: |
+ *       🔐 Protected route  
+ *       Requires JWT authentication.
+ *       
+ *       - Owner: can update the task
+ *       - Admin: can update any task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *       403:
+ *         description: Forbidden
  */
 router.put(
-  '/:id',
+  "/:id",
   updateTaskValidation,
   validateRequest,
   checkTaskOwnership,
@@ -68,12 +134,31 @@ router.put(
 );
 
 /**
- * @route   DELETE /tasks/:id
- * @desc    Delete a task
- * @access  Private (Owner/Admin)
+ * @swagger
+ * /tasks/{id}:
+ *   delete:
+ *     summary: Delete a task
+ *     description: |
+ *       🔐 Protected route  
+ *       Requires JWT authentication.
+ *       
+ *       - Owner: can delete the task
+ *       - Admin: can delete any task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task deleted successfully
+ *       403:
+ *         description: Forbidden
  */
 router.delete(
-  '/:id',
+  "/:id",
   taskIdValidation,
   validateRequest,
   checkTaskOwnership,

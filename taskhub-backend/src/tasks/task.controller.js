@@ -1,5 +1,5 @@
-const Task = require('../models/task.model');
-const logAction = require('../middleware/auditLog.middleware'); // import the audit log helper
+const Task = require('./task.model');
+const logAction = require('../middlewares/auditLog.middleware'); // import the audit log helper
 
 /**
  * @desc   Create a new task
